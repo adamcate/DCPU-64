@@ -1,0 +1,40 @@
+; calculate the mandelbrot set on the FPU
+; this program is synchronous i.e. it busy-loops while the FPU is running
+; in the future it will be upgraded so that it draws and loads more data
+; while the FPU is running
+
+; .define vram 0x8000
+
+set pc, start
+
+start:	jsr fpu_init
+	jsr fpu_load_text
+
+	; we do this later, many times, now.
+	;;; set a, data_storage_1
+	;;; jsr fpu_load_data
+	;;; jsr fpu_swap_buffers
+	;;; jsr fpu_execute
+	;;; jsr fpu_get_status
+	;;; jsr fpu_swap_buffers
+	;;; set a, data_storage_1
+	;;; jsr fpu_get_data
+	;;; ifn b, 0              ; if there was an error
+	;;;   set pc, panic
+	set pc, bwhite
+	set pc, spin
+
+fpu_init:
+	set z, 0             ; set the mode
+	set a, 2             ; to MODE_POLL
+	hwi 1
+	set z, 1             ; set the precision
+	set a, 0             ; to PREC_SINGLE
+	hwi 1
+	set pc, pop
+
+fpu_load_data:
+	set z, 3             ; load data
+	;set a, data_storage_1  ; from static memory
+	hwi 1
+	jsr fpu_wait_idle
