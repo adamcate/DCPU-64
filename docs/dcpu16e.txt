@@ -1,5 +1,5 @@
 DCPU-16e Specification
-Version 1.3
+Version 1.4
 
 
 
@@ -16,24 +16,24 @@ Version 1.3
 * ring mode (RM)
 
 Memory bank 0 is called the primary memory bank. Memory banks 1-7 are called
-supplementary memory banks. If only the primary memory bank is used, then 
-the processor behaves like a DCPU-16. The currently selected memory bank is the
-memory bank MB. 
+supplementary memory banks. If only the primary memory bank is used, then the
+processor behaves like a DCPU-16. The currently selected memory bank is the
+memory bank MB.
 
-The DCPU-16e always starts in kernel mode (RM=0) on memory bank zero (MB=0). If no
-ring mode-related or memory bank-related instructions are executedc, the processor
-behaves exactly like a DCPU-16 v1.7.
+The DCPU-16e always starts in kernel mode (RM=0) on memory bank zero (MB=0). If
+no ring mode-related or memory bank-related instructions are executed, the
+processor behaves exactly like a DCPU-16 v1.7.
 
 In this document, anything within [brackets] is shorthand for "the value of the
-RAM in the currently selected memory bank at the location of the value inside 
-the brackets". For example, SP means stack pointer, but [SP] means the value of 
-the RAM in the currently selected memory bank at the location the stack pointer is 
-pointing at.
+RAM in the currently selected memory bank at the location of the value inside
+the brackets". For example, SP means stack pointer, but [SP] means the value of
+the RAM in the currently selected memory bank at the location the stack pointer
+is pointing at.
 
-Anything within {brackets} is shorthand for "the value of the RAM in bank zero at
-the location of the value inside the brackets". For example, IA means interrupt
-address and [IA] means the value of the current bank's RAM pointed to by IA, but
-{IA} means the value of bank zero's RAM pointed to by IA.
+Anything within {brackets} is shorthand for "the value of the RAM in bank zero
+at the location of the value inside the brackets". For example, IA means
+interrupt address and [IA] means the value of the current bank's RAM pointed to
+by IA, but {IA} means the value of bank zero's RAM pointed to by IA.
 
 Whenever the CPU needs to read a word, it reads [PC], then increases PC by one.
 Shorthand for this is [PC++]. In some cases, the CPU will modify a value before
@@ -75,13 +75,14 @@ DESCRIPTION is a short text that describes the opcode or value.
  1 |      0x1f | next word (literal)
  0 | 0x20-0x3f | literal value 0xffff-0x1e (-1..30) (literal) (only for a)
  --+-----------+----------------------------------------------------------------
-  
+
 * "next word" means "[PC++]". Increases the word length of the instruction by 1.
 * By using 0x18, 0x19, 0x1a as PEEK, POP/PUSH, and PICK there's a reverse stack
   starting at memory location 0xffff. Example: "SET PUSH, 10", "SET X, POP"
 * Attempting to write to a literal value fails silently
-* "[next word]" means "[[PC++]]". If in user mode, the first memory read requires
-  the 'execute' bit, while the second memory read requires the 'read' bit.
+* "[next word]" means "[[PC++]]".  If in user mode, the first memory read
+  requires the 'execute' bit, while the second memory read requires the 'read'
+  bit.
 
 
 
@@ -90,7 +91,7 @@ DESCRIPTION is a short text that describes the opcode or value.
 ---+------+----------+---------------------------------------------------------
  - | 0x00 | n/a      | special instruction - see below
  1 | 0x01 | SET b, a | sets b to a
- 2 | 0x02 | ADD b, a | sets b to b+a, sets EX to 0x0001 if there's an overflow, 
+ 2 | 0x02 | ADD b, a | sets b to b+a, sets EX to 0x0001 if there's an overflow,
    |      |          | 0x0 otherwise
  2 | 0x03 | SUB b, a | sets b to b-a, sets EX to 0xffff if there's an underflow,
    |      |          | 0x0 otherwise
@@ -105,18 +106,18 @@ DESCRIPTION is a short text that describes the opcode or value.
  1 | 0x0a | AND b, a | sets b to b&a
  1 | 0x0b | BOR b, a | sets b to b|a
  1 | 0x0c | XOR b, a | sets b to b^a
- 1 | 0x0d | SHR b, a | sets b to b>>>a, sets EX to ((b<<16)>>a)&0xffff 
+ 1 | 0x0d | SHR b, a | sets b to b>>>a, sets EX to ((b<<16)>>a)&0xffff
    |      |          | (logical shift)
- 1 | 0x0e | ASR b, a | sets b to b>>a, sets EX to ((b<<16)>>>a)&0xffff 
+ 1 | 0x0e | ASR b, a | sets b to b>>a, sets EX to ((b<<16)>>>a)&0xffff
    |      |          | (arithmetic shift) (treats b as signed)
  1 | 0x0f | SHL b, a | sets b to b<<a, sets EX to ((b<<a)>>16)&0xffff
  2+| 0x10 | IFB b, a | performs next instruction only if (b&a)!=0
  2+| 0x11 | IFC b, a | performs next instruction only if (b&a)==0
- 2+| 0x12 | IFE b, a | performs next instruction only if b==a 
- 2+| 0x13 | IFN b, a | performs next instruction only if b!=a 
- 2+| 0x14 | IFG b, a | performs next instruction only if b>a 
+ 2+| 0x12 | IFE b, a | performs next instruction only if b==a
+ 2+| 0x13 | IFN b, a | performs next instruction only if b!=a
+ 2+| 0x14 | IFG b, a | performs next instruction only if b>a
  2+| 0x15 | IFA b, a | performs next instruction only if b>a (signed)
- 2+| 0x16 | IFL b, a | performs next instruction only if b<a 
+ 2+| 0x16 | IFL b, a | performs next instruction only if b<a
  2+| 0x17 | IFU b, a | performs next instruction only if b<a (signed)
  - | 0x18 | -        |
  - | 0x19 | -        |
@@ -124,7 +125,7 @@ DESCRIPTION is a short text that describes the opcode or value.
    |      |          | flow, 0x0 otherwise
  3 | 0x1b | SBX b, a | sets b to b-a+EX, sets EX to 0xFFFF if there is an under-
    |      |          | flow, 0x0001 if there's an overflow, 0x0 otherwise
- - | 0x1c | -        | 
+ - | 0x1c | -        |
  - | 0x1d | -        |
  2 | 0x1e | STI b, a | sets b to a, then increases I and J by 1
  2 | 0x1f | STD b, a | sets b to a, then decreases I and J by 1
@@ -135,10 +136,10 @@ DESCRIPTION is a short text that describes the opcode or value.
   instruction at the cost of one extra cycle. This continues until a non-
   conditional instruction has been skipped. This lets you easily chain
   conditionals. Interrupts are not triggered while the DCPU-16e is skipping.
-    
+
 * Signed numbers are represented using two's complement.
 
-    
+
 Special opcodes always have their lower five bits unset, have one value and a
 five bit opcode. In binary, they have the format: aaaaaaooooo00000
 The value (a) is in the same six bit format as defined earlier.
@@ -146,26 +147,26 @@ The value (a) is in the same six bit format as defined earlier.
 --- Special opcodes: (5 bits) --------------------------------------------------
  C | VAL  | NAME  | DESCRIPTION
 ---+------+-------+-------------------------------------------------------------
- - | 0x00 | n/a   | reserved for future expansion
+ - | 0x00 | n/a   | simple instruction - see below
  3 | 0x01 | JSR a | pushes the address of the next instruction to the stack,
    |      |       | then sets PC to a
  - | 0x02 | -     |
  - | 0x03 | -     |
- - | 0x04 | -     | 
+ - | 0x04 | -     |
  1 | 0x05 | MBG a | sets a to MB
- 1+| 0x06 | MBO a | a is in the format qqqqqqqsssdddPPP. 
+ 1+| 0x06 | MBO a | a is in the format qqqqqqqsssdddPPP.
    |      |       | if MB != P, switches to memory bank P.
-   |      |       | copies 512 words from bank s starting at address (q<<9) 
-   |      |       | to bank d starting at address (q<<9). 
+   |      |       | copies 512 words from bank s starting at address (q<<9)
+   |      |       | to bank d starting at address (q<<9).
    |      |       | (q<<9) == (a & ~(0x1f)).
    |      |       | takes an additional 64 cycles if it copies data.
-   |      |       | takes an additional 8 cycles if it switches memory banks. 
+   |      |       | takes an additional 8 cycles if it switches memory banks.
    |      |       | If s == d, no copying occurs.
- - | 0x07 | -     | 
+ - | 0x07 | -     |
  4 | 0x08 | INT a | triggers a software interrupt with message a
- 1 | 0x09 | IAG a | sets a to IA 
+ 1 | 0x09 | IAG a | sets a to IA
  1 | 0x0a | IAS a | sets IA to a
- 3 | 0x0b | RFI a | disables interrupt queueing, pops A from the stack, then 
+ 3 | 0x0b | RFI a | disables interrupt queueing, pops A from the stack, then
    |      |       | pops PC from the stack
  2 | 0x0c | IAQ a | if a is nonzero, interrupts will be added to the queue
    |      |       | instead of triggered. if a is zero, interrupts will be
@@ -184,8 +185,8 @@ The value (a) is in the same six bit format as defined earlier.
  - | 0x15 | -     |
  2 | 0x16 | GRM a | Set a to RM
  2 | 0x17 | DRM a | Set a to RM. Then set RM to 1.
- 4 | 0x18 | SRT a | Set global descriptor table. a is the memory address. 
-   |      |       | a is always interpreted as being in the primary memory bank. 
+ 4 | 0x18 | SRT a | Set global descriptor table. a is the memory address.
+   |      |       | a is always interpreted as being in the primary memory bank.
  - | 0x19 | -     |
  - | 0x1a | -     |
  - | 0x1b | -     |
@@ -196,84 +197,101 @@ The value (a) is in the same six bit format as defined earlier.
 ---+------+-------+-------------------------------------------------------------
 
 
+Nullary opcodes always have their lower ten bits unset and a six bit opcode.
+In binary, they have the format: oooooo0000000000.
 
-=== MEMORY BANKS =============================================================== 
+--- Nullary opcodes: (6 bits) --------------------------------------------------
+ C | VAL  | NAME | DESCRIPTION
+---+------+------+--------------------------------------------------------------
+ 1 | 0x00 | NOP  | reserved for future expansion
+ 1 | 0x01 | HLT  | immediately halts the processor
+ - | ...  | -    | reserved for future expansion
+---+------+------+--------------------------------------------------------------
+
+
+=== MEMORY BANKS ===============================================================
 
 Each of the eight memory banks is made up of 0x10000 words of RAM. The intended
 purpose of this is to extend the DCPU's memory without introducing backwards
-incompatibility. 
+incompatibility.
 
-MBO serves two purposes: copying data between memory banks, and switching between
-memory banks. It can do both, either or neither. It will never copy from a memory
-bank to itself, nor will it switch to the current memory bank. Instead, it will
-simply elide those meaningless operations.
+MBO serves two purposes: copying data between memory banks, and switching
+between memory banks. It can do both, either or neither. It will never copy from
+a memory bank to itself, nor will it switch to the current memory bank. Instead,
+it will simply elide those meaningless operations.
 
-=== RING MODES ================================================================= 
+
+=== RING MODES =================================================================
 
 The RM register holds the 'ring mode' of the CPU: kernel (0) or user (non-zero).
-When in kernel mode, the behaviour of the CPU is an extension of the behaviour of
-the DCPU-16 v1.7. All instructions work as normal.
+When in kernel mode, the behaviour of the CPU is an extension of the behaviour
+of the DCPU-16 v1.7. All instructions work as normal.
 
 When in user mode, the instructions HWI, HWN, HWQ, IAQ, IAS, RFI, SRT and MBO
-are disabled. When any of these instructions are attemped, an illegal instruction
-general protection fault (GPFINS) is raised, triggering an interrupt. 
+are disabled. When any of these instructions are attemped, an illegal
+instruction general protection fault (GPFINS) is raised, triggering an
+interrupt.
 
 In addition, when in user mode any memory accesses are moderated by the GDT/LDT
 mechanism. See below.
 
 --- Global Descriptor Table: -------------------------------------------------
 0x0000    Interrupt message used when GPF is thrown
-0x0002    Local descriptor table address. If 0xFFFF, local descriptor tables are ignored.
-          This address is always interpreted in the current memory bank. 
-          This is not the address of the LDT, but the address within each memory bank
-          where an address is stored that points to the LDT.
+0x0002    Local descriptor table address. If 0xFFFF, local descriptor tables are
+          ignored. This address is always interpreted in the current memory
+          bank.  This is not the address of the LDT, but the address within each
+          memory bank where an address is stored that points to the LDT.
 0x0003    Entry count
 0x0004-*  Entries
     Entry:
-        0x0000    Memory address start and access flags, in the format (in LSB-0):
+        0x0000    Memory address start and access flags in the format (LSB-0):
                       sssssssslllllrwe
-                  The bottom three bits (rwe) are the access flags. The next five
-                  bits (lllll) are the length of the entry in bytes divided by 256. The
-                  remaining 8 bits (ssssssss) are the starting address of the page. Since 
-                  the page size is always a multiple of 256 words and all pages must be
-                  aligned on 256 word boundaries, the eight least significant bits will
-                  never be used by the memory address.
-                  Flags: 
+                  The bottom three bits (rwe) are the access flags. The next
+                  five bits (lllll) are the length of the entry in bytes divided
+                  by 256. The remaining 8 bits (ssssssss) are the starting
+                  address of the page. Since the page size is always a multiple
+                  of 256 words and all pages must be aligned on 256 word
+                  boundaries, the eight least significant bits will never be
+                  used by the memory address.
+                  Flags:
                     r: read
                     w: write
                     e: execute
 Local Descriptor Table:
-A Local Descriptor Table is identical to the Global Descriptor Table, but starts at 'Entry Count'.
+A Local Descriptor Table is identical to the Global Descriptor Table, but starts
+at 'Entry Count'.
 
-There is no limit to the number of entries in either the GDT or the LDT except the natural limits of
-the CPU's memory.
+There is no limit to the number of entries in either the GDT or the LDT except
+the natural limits of the CPU's memory.
 
-The GDT and LDTs are only re-evaluated when the SRT instruction is called. When this happens, the
-descriptor tables are internally compiled into a single table per bank (comprising the LDT for that
-bank and the GDT, which applies to all banks).
-If there are any duplicate address blocks on either of the tables (including duplicates within the
-same table), the entries are collapsed additively into a single set of permission flags.
-For example, if the GDT specifies that address block 0-0x100 should have access --x, and the LDT
-specifies that address block 0-0x100 on memory bank 2 should have access r--, the resulting
-access for address block 0-0x100 on memory bank 2 is r-x.
+The GDT and LDTs are only re-evaluated when the SRT instruction is called. When
+this happens, the descriptor tables are internally compiled into a single table
+per bank (comprising the LDT for that bank and the GDT, which applies to all
+banks).
+If there are any duplicate address blocks on either of the tables (including
+duplicates within the same table), the entries are collapsed additively into a
+single set of permission flags.  For example, if the GDT specifies that address
+block 0-0x100 should have access --x, and the LDT specifies that address block
+0-0x100 on memory bank 2 should have access r--, the resulting access for
+address block 0-0x100 on memory bank 2 is r-x.
 In other words, LDTs and the GDT grant permission. They don't take it away.
 
 
-The 'execute' flag refers to loading from memory any values that are going to be executed,
-or any literals that follow. If this is violated, a GPF is thrown.
+The 'execute' flag refers to loading from memory any values that are going to be
+executed, or any literals that follow. If this is violated, a GPF is thrown.
 
-The 'read' flag is not required for code being executed. 
+The 'read' flag is not required for code being executed.
 
-Whenever an address is read from memory in usermode, the address is checked against the
-LDT (first), and then the GDT. If the 'read' or 'execute' flag is not set (depending on 
-whether it's being read as instruction memory), or no rule exists for the given memory
-address, a GPF is thrown.
+Whenever an address is read from memory in usermode, the address is checked
+against the LDT (first), and then the GDT. If the 'read' or 'execute' flag is
+not set (depending on whether it's being read as instruction memory), or no rule
+exists for the given memory address, a GPF is thrown.
 
-When an address is written to memory in usermode, the address is checked against the LDT, 
-and then the GDT. If the 'write' flag is not set or no rule exists for the given
-memory address, a GPF is thrown.
+When an address is written to memory in usermode, the address is checked against
+the LDT, and then the GDT. If the 'write' flag is not set or no rule exists for
+the given memory address, a GPF is thrown.
 
-Each time a descriptor table is consulted, there is a cost of 1 cycle. 
+Each time a descriptor table is consulted, there is a cost of 1 cycle.
 
 --- General Protection Faults: -----------------------------------------------
   NAME  | GPF_MSG | DESCRIPTION
@@ -282,31 +300,31 @@ Each time a descriptor table is consulted, there is a cost of 1 cycle.
  GPFINS | 0x0001  | illegal instruction execution
  GPFMEM | 0x0002  | illegal memory access
 
-When a GPF is thrown, an interrupt is triggered with the following interrupt message:
+When a GPF is thrown, an interrupt is triggered with the interrupt message:
     (GDT message) | (GPF message)
 
-Attempting to execute in memory that is locked (i.e, the 'execute' flag is not set)
-is an illegal memory access, not an illegal instruction execution. 
+Attempting to execute in memory that is locked (i.e, the 'execute' flag is not
+set) is an illegal memory access, not an illegal instruction execution.
 
 If SRT has been called at least once, the following change occurs to interrupts:
  4 | 0x08 | INT a | triggers a software interrupt with message a:
    |      |       | turn on interrupt queueing, push RM to the stack, push
    |      |       | PC to the stack, push A to the stack, set PC to IA, then
-   |      |       | set A to a, then set RM to 0. 
- 3 | 0x0b | RFI a | disables interrupt queueing, pops A from the stack, then 
+   |      |       | set A to a, then set RM to 0.
+ 3 | 0x0b | RFI a | disables interrupt queueing, pops A from the stack, then
    |      |       | pops PC from the stack, then pops RM from the stack.
    |      |       |
 
-=== INTERRUPTS =================================================================    
+=== INTERRUPTS =================================================================
 
 The DCPU-16e will perform at most one interrupt between each instruction. If
 multiple interrupts are triggered at the same time, they are added to a queue.
-If the queue grows longer than 256 interrupts, the DCPU-16e will catch fire. 
+If the queue grows longer than 256 interrupts, the DCPU-16e will catch fire.
 
 When IA is set to something other than 0, interrupts triggered on the DCPU-16e
 will turn on interrupt queueing, push PC to the stack, followed by pushing A to
 the stack, then set the PC to IA, and A to the interrupt message.
- 
+
 If IA is set to 0, a triggered interrupt does nothing. Software interrupts still
 take up four clock cycles, but immediately return, incoming hardware interrupts
 are ignored. Note that a queued interrupt is considered triggered when it leaves
@@ -320,13 +338,13 @@ critical code.
 
 
 
-=== HARDWARE ===================================================================    
+=== HARDWARE ===================================================================
 
 The DCPU-16e supports up to 65535 connected hardware devices. These devices can
 be anything from additional storage, sensors, monitors or speakers.
 How to control the hardware is specified per hardware device, but the DCPU-16e
-supports a standard enumeration method for detecting connected hardware via
-the HWN, HWQ and HWI instructions.
+supports a standard enumeration method for detecting connected hardware via the
+HWN, HWQ and HWI instructions.
 
 Interrupts sent to hardware can't contain messages, can take additional cycles,
 and can read or modify any registers or memory adresses on the DCPU-16e. This
@@ -335,7 +353,7 @@ documentation.
 
 Hardware must NOT start modifying registers or ram on the DCPU-16e before at
 least one HWI call has been made to the hardware. Hardware only accesses the
-primary memory bank, unless otherwise specified by the hardware. 
+primary memory bank, unless otherwise specified by the hardware.
 
 The DPCU-16e does not support hot swapping hardware. The behavior of connecting
 or disconnecting hardware while the DCPU-16e is running is undefined.
