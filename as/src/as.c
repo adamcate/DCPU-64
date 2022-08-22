@@ -22,7 +22,7 @@
 
 #ifndef NDEBUG
 #define INFO(...) do {                  \
-	if (state->opts.verbose >= 1) { \
+	if (verbose >= 1) { \
 		errf(__VA_ARGS__);      \
 	}                               \
 } while (0)
@@ -32,7 +32,7 @@
 
 #ifndef NDEBUG
 #define TRACE(...) do {                 \
-	if (state->opts.verbose >= 2) { \
+	if (verbose >= 2) { \
 		errf(__VA_ARGS__);      \
 	}                               \
 } while (0)
@@ -48,24 +48,19 @@
 
 struct expr;
 
-struct as_opts {
-	char *output;
-	char optimise;
-	int verbose;
-	bool dontlink;
-	bool error;
-	bool extended;
-};
+static char *output;
+static char optimise;
+static int verbose;
+static bool dontlink;
+static bool error;
+static bool extended;
 
-struct as_state {
-	struct as_opts opts;
-	uint16_t image[65536];
-	uint16_t gaps[65536];
-	uint16_t refloc[65536];
-	struct expr *reftgt[65536];
-	const char *lblnam[65536];
-	uint16_t lbltgt[65536];
-};
+static uint16_t image[65536];
+static uint16_t gaps[65536];
+static uint16_t refloc[65536];
+static struct expr *reftgt[65536];
+static const char *lblnam[65536];
+static uint16_t lbltgt[65536];
 
 enum token_type {
 	TT_ERROR,
@@ -111,9 +106,9 @@ struct expr {
 	struct expr *left, *right;
 };
 
-typedef struct expr *prefix_fn(struct as_state *state, size_t line, char *buf,
+typedef struct expr *prefix_fn(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *nexttok);
-typedef struct expr *infix_fn(struct as_state *state, size_t line, char *buf,
+typedef struct expr *infix_fn(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *nexttok, struct expr *left);
 
 struct pratt_entry {
@@ -224,7 +219,7 @@ expr_new(void)
 
 static
 struct expr *
-reduce(struct as_state *state, struct expr *expr)
+reduce(struct expr *expr)
 {
 	if (expr->left == NULL && expr->right == NULL) {
 		if (expr->value == -1)
@@ -235,8 +230,8 @@ reduce(struct as_state *state, struct expr *expr)
 		}
 	}
 
-	expr->left = reduce(state, expr->left);
-	expr->right = reduce(state, expr->right);
+	expr->left = reduce(expr->left);
+	expr->right = reduce(expr->right);
 
 	if (expr->left->value == -1 && expr->right->value == -1) {
 		assert(0); /* not yet implemented */
@@ -337,7 +332,7 @@ consume_ws(const char *buf, size_t len, size_t *offset)
 
 static
 int
-consume(struct as_state *state, char *buf, size_t len, size_t *offset,
+consume(char *buf, size_t len, size_t *offset,
 		struct token *tok)
 {
 	consume_ws(buf, len, offset);
@@ -374,7 +369,7 @@ consume(struct as_state *state, char *buf, size_t len, size_t *offset,
 
 		convertkw(tok, TT_KW, kws, ARRAY_SIZE(kws));
 		convertkw(tok, TT_OP, ops, ARRAY_SIZE(ops));
-		if (state->opts.extended)
+		if (extended)
 			convertkw(tok, TT_EOP, eops, ARRAY_SIZE(eops));
 
 		return 0;
@@ -460,7 +455,7 @@ consume(struct as_state *state, char *buf, size_t len, size_t *offset,
 
 	(*offset)++;
 error:
-	state->opts.error = true;
+	error = true;
 	tok->type = TT_ERROR;
 	tok->str = buf + offset_before;
 	tok->len = *offset - offset_before;
@@ -470,12 +465,12 @@ error:
 
 static
 struct token
-get_token(struct as_state *state, size_t line, char *buf, size_t len,
+get_token(size_t line, char *buf, size_t len,
 		size_t *offset)
 {
 	struct token tok = { .line=line, .col=*offset };
 
-	while (consume(state, buf, len, offset, &tok) && *offset < len) {
+	while (consume(buf, len, offset, &tok) && *offset < len) {
 		errf("%d:%d: unrecognised token: `%.*s'\n",
 			line, *offset, tok.len, tok.str);
 	}
@@ -514,100 +509,100 @@ end:
 
 static
 struct expr *
-parse_prec(struct as_state *state, size_t line, char *buf, size_t len,
+parse_prec(size_t line, char *buf, size_t len,
 		size_t *offset, struct token *tok, int prec);
 
 static
 struct expr *
-decint(struct as_state *state, size_t line, char *buf,
+decint(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
 	uint16_t value = strtou16(tok->str, tok->len, 10);
-	*tok = get_token(state, line, buf, len, offset);
+	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value);
 }
 
 static
 struct expr *
-hexint(struct as_state *state, size_t line, char *buf,
+hexint(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
 	uint16_t value = strtou16(tok->str, tok->len, 16);
-	*tok = get_token(state, line, buf, len, offset);
+	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value);
 }
 
 static
 struct expr *
-octint(struct as_state *state, size_t line, char *buf,
+octint(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
 	uint16_t value = strtou16(tok->str, tok->len, 8);
-	*tok = get_token(state, line, buf, len, offset);
+	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value);
 }
 
 static
 struct expr *
-decintk(struct as_state *state, size_t line, char *buf,
+decintk(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
 	uint16_t value = strtou16(tok->str, tok->len, 10);
-	*tok = get_token(state, line, buf, len, offset);
+	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value * 1024);
 }
 
 static
 struct expr *
-hexintk(struct as_state *state, size_t line, char *buf,
+hexintk(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
 	uint16_t value = strtou16(tok->str, tok->len, 16);
-	*tok = get_token(state, line, buf, len, offset);
+	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value * 1024);
 }
 
 static
 struct expr *
-octintk(struct as_state *state, size_t line, char *buf,
+octintk(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
 	uint16_t value = strtou16(tok->str, tok->len, 8);
-	*tok = get_token(state, line, buf, len, offset);
+	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value * 1024);
 }
 
 static
 struct expr *
-keyword(struct as_state *state, size_t line, char *buf,
+keyword(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
 	struct expr *expr = expr_fromtoken(*tok);
-	*tok = get_token(state, line, buf, len, offset);
+	*tok = get_token(line, buf, len, offset);
 	return expr;
 }
 
 static
 struct expr *
-ident(struct as_state *state, size_t line, char *buf,
+ident(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
 	struct expr *expr = expr_fromtoken(*tok);
-	*tok = get_token(state, line, buf, len, offset);
+	*tok = get_token(line, buf, len, offset);
 	return expr;
 }
 
 static
 struct expr *
-square(struct as_state *state, size_t line, char *buf,
+square(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
 	struct token brack = *tok;
-	*tok = get_token(state, line, buf, len, offset);
-	struct expr *inner = parse_prec(state, line, buf, len, offset, tok,
+	*tok = get_token(line, buf, len, offset);
+	struct expr *inner = parse_prec(line, buf, len, offset, tok,
 		PREC_TERM);
 	if (tok->type == TT_RSQ) {
-		*tok = get_token(state, line, buf, len, offset);
+		*tok = get_token(line, buf, len, offset);
 	} else {
 		errf("%s:%s: unexpected `%.*s', expected `]'\n",
 			line, *offset, tok->len, tok->str);
@@ -619,14 +614,14 @@ square(struct as_state *state, size_t line, char *buf,
 
 static
 struct expr *
-grouping(struct as_state *state, size_t line, char *buf,
+grouping(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
-	*tok = get_token(state, line, buf, len, offset);
-	struct expr *expr = parse_prec(state, line, buf, len, offset, tok,
+	*tok = get_token(line, buf, len, offset);
+	struct expr *expr = parse_prec(line, buf, len, offset, tok,
 		PREC_TERM);
 	if (tok->type == TT_RBRACK) {
-		*tok = get_token(state, line, buf, len, offset);
+		*tok = get_token(line, buf, len, offset);
 	} else {
 		errf("%s:%s: unexpected `%.*s', expected `]'\n",
 			line, *offset, tok->len, tok->str);
@@ -638,11 +633,11 @@ static struct pratt_entry pratt_table[128];
 
 static
 struct expr *
-unary(struct as_state *state, size_t line, char *buf,
+unary(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok)
 {
 	struct token op = *tok;
-	struct expr *inner = parse_prec(state, line, buf, len, offset, tok,
+	struct expr *inner = parse_prec(line, buf, len, offset, tok,
 		PREC_UNARY);
 	struct expr *outer = expr_fromtoken(op);
 	outer->right = inner;
@@ -651,15 +646,15 @@ unary(struct as_state *state, size_t line, char *buf,
 
 static
 struct expr *
-binary(struct as_state *state, size_t line, char *buf,
+binary(size_t line, char *buf,
 	size_t len, size_t *offset, struct token *tok, struct expr *left)
 {
 	struct token op = *tok;
-	*tok = get_token(state, line, buf, len, offset);
+	*tok = get_token(line, buf, len, offset);
 	int next_prec = pratt_table[op.type].precedence;
 	if (!pratt_table[op.type].right_assoc)
 		next_prec++;
-	struct expr *inner = parse_prec(state, line, buf, len, offset, tok,
+	struct expr *inner = parse_prec(line, buf, len, offset, tok,
 		next_prec);
 	struct expr *outer = expr_fromtoken(op);
 	outer->left = left;
@@ -699,7 +694,7 @@ static struct pratt_entry pratt_table[] = {
 
 static
 struct expr *
-parse_prec(struct as_state *state, size_t line, char *buf, size_t len,
+parse_prec(size_t line, char *buf, size_t len,
 		size_t *offset, struct token *tok, int prec)
 {
 	TRACE("parse_prec(prec=%d)\n", prec);
@@ -710,14 +705,14 @@ parse_prec(struct as_state *state, size_t line, char *buf, size_t len,
 		return NULL;
 	}
 
-	struct expr *expr = pfn(state, line, buf, len, offset, tok);
+	struct expr *expr = pfn(line, buf, len, offset, tok);
 	assert(expr);
 
 	struct pratt_entry *entry = &pratt_table[tok->type];
 	while (prec <= entry->precedence) {
 		infix_fn *ifn = entry->infix;
 		assert(ifn);
-		expr = ifn(state, line, buf, len, offset, tok, expr);
+		expr = ifn(line, buf, len, offset, tok, expr);
 		assert(expr);
 		entry = &pratt_table[tok->type];
 	}
@@ -727,17 +722,17 @@ parse_prec(struct as_state *state, size_t line, char *buf, size_t len,
 
 static
 int
-consume_line(struct as_state *state, size_t line, char *buf, size_t len)
+consume_line(size_t line, char *buf, size_t len)
 {
 	struct token tok;
 	size_t i = 0;
 
-	tok = get_token(state, line, buf, len, &i);
+	tok = get_token(line, buf, len, &i);
 
 	while (tok.type == TT_IDENT) {
 		struct token label = tok;
 
-		tok = get_token(state, line, buf, len, &i);
+		tok = get_token(line, buf, len, &i);
 		if (tok.type != TT_COLON) {
 			errf("%d:%d: unexpected `%.*s' (expected `:').\n",
 				line, i, tok.len, tok.str);
@@ -745,32 +740,32 @@ consume_line(struct as_state *state, size_t line, char *buf, size_t len)
 		}
 
 		INFO("add `%.*s' to the label table\n", label.len, label.str);
-		tok = get_token(state, line, buf, len, &i);
+		tok = get_token(line, buf, len, &i);
 	}
 
 	if (tok.type == TT_OP || tok.type == TT_EOP) {
 		struct token op = tok;
 
-		tok = get_token(state, line, buf, len, &i);
-		struct expr *left = parse_prec(state, line, buf, len, &i, &tok,
+		tok = get_token(line, buf, len, &i);
+		struct expr *left = parse_prec(line, buf, len, &i, &tok,
 				PREC_TERM);
 		if (left == NULL)
 			return 1;
 
-		if (state->opts.verbose >= 2) {
+		if (verbose >= 2) {
 			eprintf("LEFT=");
 			print_expr(left);
 			eprintf("\n");
 		}
 
 		if (tok.type == TT_COMMA) {
-			tok = get_token(state, line, buf, len, &i);
-			struct expr *right = parse_prec(state, line, buf, len,
+			tok = get_token(line, buf, len, &i);
+			struct expr *right = parse_prec(line, buf, len,
 					&i, &tok, PREC_TERM);
 			if (right == NULL)
 				return 1;
 
-			if (state->opts.verbose >= 2) {
+			if (verbose >= 2) {
 				eprintf("RIGHT=");
 				print_expr(right);
 				eprintf("\n");
@@ -786,7 +781,7 @@ consume_line(struct as_state *state, size_t line, char *buf, size_t len)
 
 static
 int
-process(struct as_state *state, FILE *f)
+process(FILE *f)
 {
 	char sbuf[100] = {0};
 	char *buf = NULL, *str;
@@ -797,7 +792,7 @@ process(struct as_state *state, FILE *f)
 
 		TRACE("LINE=%s\n", str);
 
-		consume_line(state, line, str, len);
+		consume_line(line, str, len);
 	}
 
 	free(buf);
@@ -806,7 +801,7 @@ process(struct as_state *state, FILE *f)
 
 static
 int
-master(struct as_state *state, char **argv)
+master(char **argv)
 {
 	char *buf;
 	size_t size, len;
@@ -814,7 +809,7 @@ master(struct as_state *state, char **argv)
 	if (!*argv) {
 		TRACE("INPUT=-\n");
 
-		process(state, stdin);
+		process(stdin);
 	} else for (; *argv; argv++) {
 		TRACE("INPUT=%s\n", *argv);
 
@@ -824,7 +819,7 @@ master(struct as_state *state, char **argv)
 			return 1;
 		}
 
-		int result = process(state, f);
+		int result = process(f);
 		fclose(f);
 		if (result) {
 			errf("an error occurred in %s\n", *argv);
@@ -832,7 +827,7 @@ master(struct as_state *state, char **argv)
 		}
 	}
 
-	TRACE("OUTPUT=%s\n", state->opts.output ? state->opts.output : "-");
+	TRACE("OUTPUT=%s\n", output ? output : "-");
 
 	return 0;
 }
@@ -853,7 +848,6 @@ int
 main(int argc, char **argv)
 {
 	struct optparse options;
-	struct as_state state = {0};
 	int option;
 
 	/* together, these four lines allocate 49 times in glibc.  WHY? */
@@ -867,18 +861,18 @@ main(int argc, char **argv)
 
 	while ((option = optparse(&options, "hvceo:O:")) != -1) {
 		switch (option) {
-		case 'v': state.opts.verbose++; break;
-		case 'c': state.opts.dontlink = true; break;
-		case 'e': state.opts.extended = true; break;
-		case 'o': state.opts.output   = options.optarg; break;
-		case 'O': state.opts.optimise = options.optarg[0]; break;
+		case 'v': verbose++; break;
+		case 'c': dontlink = true; break;
+		case 'e': extended = true; break;
+		case 'o': output   = options.optarg; break;
+		case 'O': optimise = options.optarg[0]; break;
 		case 'h': usage(argv[0], NULL);
 		case '?': usage(argv[0], options.errmsg);
 		}
 	}
 
-	if (state.opts.verbose >= 3)
-		errf("VERBOSE=%d\n", state.opts.verbose);
+	if (verbose >= 3)
+		errf("VERBOSE=%d\n", verbose);
 
-	return master(&state, argv + options.optind);
+	return master(argv + options.optind);
 }
