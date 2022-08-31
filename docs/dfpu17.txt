@@ -18,7 +18,7 @@ Manufacturer: 0x52307537 (MILES_ROUT)
 The DFPU-17 (D17) is an optional floating-point coprocessor for
 the DCPU-16. Its main purpose is to be used for navigation and
 orientation in space. It is capable of operating in various modes
-depending on whether the user's needs.
+depending on the user's needs.
 
 The D17 has three banks of memory: two 512-word DATA banks and a
 256-word TEXT bank. Each time floating-point data needs to be

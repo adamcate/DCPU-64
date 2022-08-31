@@ -41,7 +41,7 @@ tags:
 	dtasm --binary $< -o $@
 
 %.hex: %.bin
-	python3 utils.py $< > $@
+	python3 scripts/bin2hex.py $< > $@
 
 .PHONY: clean syntastic
 clean:

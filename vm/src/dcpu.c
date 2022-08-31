@@ -211,6 +211,19 @@ static u16 *instr_cycle(struct dcpu *dcpu)
 			fprintf(stderr, "PC:0x%04x SP:0x%04x EX:0x%04x IA:0x%04x\n",
 				dcpu->pc, dcpu->sp, dcpu->ex, dcpu->ia);
 			return NULL;
+		case 0x03:
+			/* HALT */
+			fprintf(stderr, " A:0x%04x  B:0x%04x  C:0x%04x  I:0x%04x\n",
+				dcpu->registers[0], dcpu->registers[1],
+				dcpu->registers[2], dcpu->registers[6]);
+			fprintf(stderr, " X:0x%04x  Y:0x%04x  Z:0x%04x  J:0x%04x\n",
+				dcpu->registers[3], dcpu->registers[4],
+				dcpu->registers[5], dcpu->registers[7]);
+			fprintf(stderr, "PC:0x%04x SP:0x%04x EX:0x%04x IA:0x%04x\n",
+				dcpu->pc, dcpu->sp, dcpu->ex, dcpu->ia);
+			fprintf(stderr, "HALT INSTRUCTION CALLED\n");
+			fprintf(stderr, "total cycles=%d\n", dcpu->cycles);
+			for (;;) sleep(10);
 		case 0x08:
 			dcpu->cycles += 3;
 			return DIRTY(interrupt(dcpu, *pa));
