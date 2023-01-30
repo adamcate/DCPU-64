@@ -1,0 +1,8 @@
+{
+    "editor.formatOnSave": true,
+    "clang-format.executable": "/usr/bin/clang-format-14",
+    "files.associations": {
+        "\"*.h\"": "\"c11\"",
+        "types.h": "c"
+    }
+}
