@@ -7,8 +7,7 @@ static const char *cerr = "%s:%d: Could not allocate %lu-array of %lu bytes\n";
 static const char *merr = "%s:%d: Could not allocate %lu bytes\n";
 static const char *rerr = "%s:%d: Could not reallocate %p to %lu bytes\n";
 
-void *ecalloc(const char *file, int line, size_t k, size_t n)
-{
+void *ecalloc(const char *file, int line, size_t k, size_t n) {
 	void *q = calloc((k), (n));
 	if (q == NULL) {
 		fprintf(stderr, cerr, file, line, k, n);
@@ -18,8 +17,7 @@ void *ecalloc(const char *file, int line, size_t k, size_t n)
 	return q;
 }
 
-void *emalloc(const char *file, int line, size_t n)
-{
+void *emalloc(const char *file, int line, size_t n) {
 	void *p = malloc(n);
 
 	if (p == NULL) {
@@ -30,8 +28,7 @@ void *emalloc(const char *file, int line, size_t n)
 	return p;
 }
 
-void *erealloc(const char *file, int line, void *p, size_t n)
-{
+void *erealloc(const char *file, int line, void *p, size_t n) {
 	void *q = realloc(p, n);
 
 	if (q == NULL) {

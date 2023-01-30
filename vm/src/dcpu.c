@@ -20,48 +20,61 @@
 
 const struct dcpu dcpu_init = {0};
 
-u16 *DIRTY(u16 d)
-{
+u16 *DIRTY(u16 d) {
 	u16 *p = emalloc(sizeof *p);
 	*p = d;
 	return p;
 }
 
-void noop_interrupt(struct hardware *hw, struct dcpu *dcpu)
-{
+void noop_interrupt(struct hardware *hw, struct dcpu *dcpu) {
 	(void)hw;
 	(void)dcpu;
 }
 
-void noop_cycle(struct hardware *hw, u16 *dirty, struct dcpu *dcpu)
-{
+void noop_cycle(struct hardware *hw, u16 *dirty, struct dcpu *dcpu) {
 	(void)hw;
 	(void)dirty;
 	(void)dcpu;
 }
 
-struct hardware *nth_hardware(struct dcpu *dcpu, u16 n)
-{
+struct hardware *nth_hardware(struct dcpu *dcpu, u16 n) {
 	if (n >= dcpu->hw_count)
 		return NULL;
 
 	return dcpu->hw + n;
 }
 
-static u16 *decode_b(struct dcpu *dcpu, u16 b, u16 **dirty)
-{
-	#define NEXTWORD dcpu->ram[dcpu->pc++]
+static u16 *decode_b(struct dcpu *dcpu, u16 b, u16 **dirty) {
+#define NEXTWORD dcpu->ram[dcpu->pc++]
 	switch (b) {
-		case 0x00: case 0x01: case 0x02: case 0x03:
-		case 0x04: case 0x05: case 0x06: case 0x07:
+		case 0x00:
+		case 0x01:
+		case 0x02:
+		case 0x03:
+		case 0x04:
+		case 0x05:
+		case 0x06:
+		case 0x07:
 			*dirty = NULL;
 			return &dcpu->registers[b];
-		case 0x08: case 0x09: case 0x0a: case 0x0b:
-		case 0x0c: case 0x0d: case 0x0e: case 0x0f:
+		case 0x08:
+		case 0x09:
+		case 0x0a:
+		case 0x0b:
+		case 0x0c:
+		case 0x0d:
+		case 0x0e:
+		case 0x0f:
 			*dirty = DIRTY(dcpu->registers[b - 0x08]);
 			return &dcpu->ram[**dirty];
-		case 0x10: case 0x11: case 0x12: case 0x13:
-		case 0x14: case 0x15: case 0x16: case 0x17:
+		case 0x10:
+		case 0x11:
+		case 0x12:
+		case 0x13:
+		case 0x14:
+		case 0x15:
+		case 0x16:
+		case 0x17:
 			dcpu->cycles++;
 			*dirty = DIRTY(dcpu->registers[b - 0x10] + NEXTWORD);
 			return &dcpu->ram[**dirty];
@@ -95,40 +108,41 @@ static u16 *decode_b(struct dcpu *dcpu, u16 b, u16 **dirty)
 		default:
 			throw("decode_b", "out of range");
 	}
-	#undef NEXTWORD
+#undef NEXTWORD
 
 	/* unreachable */
 	abort();
 }
 
-static u16 const *decode_b_nomut(struct dcpu *dcpu, u16 b)
-{
+static u16 const *decode_b_nomut(struct dcpu *dcpu, u16 b) {
 	u16 *dirty_unused;
 	if (b == 0x18)
 		return &dcpu->ram[dcpu->sp - 1];
 	return decode_b(dcpu, b, &dirty_unused);
 }
 
-static u16 decode_a(struct dcpu *dcpu, u16 a)
-{
+static u16 decode_a(struct dcpu *dcpu, u16 a) {
 	u16 *dirty_unused;
-	if (a >= 0x40) throw("decode_a", "too large");
-	if (a == 0x18) return dcpu->ram[dcpu->sp++];
-	if (a < 0x20) return *decode_b(dcpu, a, &dirty_unused);
+	if (a >= 0x40)
+		throw("decode_a", "too large");
+	if (a == 0x18)
+		return dcpu->ram[dcpu->sp++];
+	if (a < 0x20)
+		return *decode_b(dcpu, a, &dirty_unused);
 
 	/* 0x20-0x3f | literal value 0xffff-0x1e (-1..30) (literal) (only for a) */
 	return a - 0x21;
 }
 
-static u16 decode_a_nomut(struct dcpu *dcpu, u16 a)
-{
-	if (a == 0x18) return dcpu->ram[dcpu->sp];
-	if (a < 0x20) return *decode_b_nomut(dcpu, a);
+static u16 decode_a_nomut(struct dcpu *dcpu, u16 a) {
+	if (a == 0x18)
+		return dcpu->ram[dcpu->sp];
+	if (a < 0x20)
+		return *decode_b_nomut(dcpu, a);
 	return decode_a(dcpu, a);
 }
 
-static u16 interrupt(struct dcpu *dcpu, u16 message)
-{
+static u16 interrupt(struct dcpu *dcpu, u16 message) {
 	(void)dcpu;
 	(void)message;
 	throw("interrupt", "not yet implemented");
@@ -137,8 +151,7 @@ static u16 interrupt(struct dcpu *dcpu, u16 message)
 	abort();
 }
 
-static u16 *instr_cycle(struct dcpu *dcpu)
-{
+static u16 *instr_cycle(struct dcpu *dcpu) {
 	u16 instruction = dcpu->ram[dcpu->pc++];
 	u16 opcode = instruction & 0x001f;
 	u16 enc_b = (instruction & 0x03e0) >> 5;
@@ -147,14 +160,14 @@ static u16 *instr_cycle(struct dcpu *dcpu)
 
 	/*
 	if (opcode == 0x00) {
-		fprintf(stderr, "\ninstr=0x%04x a=0x%02x o=0x%02x        | ", 
+		fprintf(stderr, "\ninstr=0x%04x a=0x%02x o=0x%02x        | ",
 				instruction, enc_a, enc_b);
 	} else {
-		fprintf(stderr, "\ninstr=0x%04x a=0x%02x b=0x%02x o=0x%02x | ", 
+		fprintf(stderr, "\ninstr=0x%04x a=0x%02x b=0x%02x o=0x%02x | ",
 				instruction, enc_a, enc_b, opcode);
 	}
 	*/
-	
+
 	dcpu->cycles++;
 
 	if (dcpu->skipping) {
@@ -183,108 +196,98 @@ static u16 *instr_cycle(struct dcpu *dcpu)
 		u16 *pa = decode_b(dcpu, enc_a, &dirty);
 		/* printf("b=%04x\n", enc_b); */
 		switch (enc_b) {
-		case 0x00:
-			/* BREAK */
-			fprintf(stderr, " A:0x%04x  B:0x%04x  C:0x%04x  I:0x%04x\n",
-				dcpu->registers[0], dcpu->registers[1],
-				dcpu->registers[2], dcpu->registers[6]);
-			fprintf(stderr, " X:0x%04x  Y:0x%04x  Z:0x%04x  J:0x%04x\n",
-				dcpu->registers[3], dcpu->registers[4],
-				dcpu->registers[5], dcpu->registers[7]);
-			fprintf(stderr, "PC:0x%04x SP:0x%04x EX:0x%04x IA:0x%04x\n",
-				dcpu->pc, dcpu->sp, dcpu->ex, dcpu->ia);
-			getchar();
-			return NULL;
-		case 0x01:
-			dcpu->ram[--dcpu->sp] = dcpu->pc;
-			dcpu->pc = *pa;
-			dcpu->cycles += 2;
-			return DIRTY(dcpu->sp);
-		case 0x02:
-			/* TRACE */
-			fprintf(stderr, " A:0x%04x  B:0x%04x  C:0x%04x  I:0x%04x\n",
-				dcpu->registers[0], dcpu->registers[1],
-				dcpu->registers[2], dcpu->registers[6]);
-			fprintf(stderr, " X:0x%04x  Y:0x%04x  Z:0x%04x  J:0x%04x\n",
-				dcpu->registers[3], dcpu->registers[4],
-				dcpu->registers[5], dcpu->registers[7]);
-			fprintf(stderr, "PC:0x%04x SP:0x%04x EX:0x%04x IA:0x%04x\n",
-				dcpu->pc, dcpu->sp, dcpu->ex, dcpu->ia);
-			return NULL;
-		case 0x03:
-			/* HALT */
-			fprintf(stderr, " A:0x%04x  B:0x%04x  C:0x%04x  I:0x%04x\n",
-				dcpu->registers[0], dcpu->registers[1],
-				dcpu->registers[2], dcpu->registers[6]);
-			fprintf(stderr, " X:0x%04x  Y:0x%04x  Z:0x%04x  J:0x%04x\n",
-				dcpu->registers[3], dcpu->registers[4],
-				dcpu->registers[5], dcpu->registers[7]);
-			fprintf(stderr, "PC:0x%04x SP:0x%04x EX:0x%04x IA:0x%04x\n",
-				dcpu->pc, dcpu->sp, dcpu->ex, dcpu->ia);
-			fprintf(stderr, "HALT INSTRUCTION CALLED\n");
-			fprintf(stderr, "total cycles=%d\n", dcpu->cycles);
-			for (;;) sleep(10);
-		case 0x08:
-			dcpu->cycles += 3;
-			return DIRTY(interrupt(dcpu, *pa));
-		case 0x09:
-			*pa = dcpu->ia;
-			return dirty;
-		case 0x0a:
-			dcpu->ia = *pa;
-			return NULL;
-		case 0x0b:
-			dcpu->queue_interrupts = false;
-			dcpu->registers[0] = dcpu->ram[dcpu->sp++];
-			dcpu->pc = dcpu->ram[dcpu->sp++];
-			dcpu->cycles += 2;
-			return NULL;
-		case 0x0c:
-			dcpu->queue_interrupts = (*pa != 0);
-			dcpu->cycles++;
-			return NULL;
-		case 0x10:
-		{
-			*pa = dcpu->hw_count;
-			dcpu->cycles++;
-			return dirty;
-		}
-		case 0x11:
-		{
-			struct device *device = nth_hardware(dcpu, *pa)->device;
-			if (device != NULL) {
-				dcpu->registers[0] = device->id;
-				dcpu->registers[1] = device->id >> 16;
-				dcpu->registers[2] = device->version;
-				dcpu->registers[3] = device->manufacturer;
-				dcpu->registers[4] = device->manufacturer >> 16;
-				fprintf(stderr, "A:0x%04x B:0x%04x C:0x%04x X:0x%04x Y:0x%04x\n",
-					dcpu->registers[0],
-					dcpu->registers[1],
-					dcpu->registers[2],
-					dcpu->registers[3],
-					dcpu->registers[4]);
+			case 0x00:
+				/* BREAK */
+				fprintf(stderr, " A:0x%04x  B:0x%04x  C:0x%04x  I:0x%04x\n", dcpu->registers[0],
+						dcpu->registers[1], dcpu->registers[2], dcpu->registers[6]);
+				fprintf(stderr, " X:0x%04x  Y:0x%04x  Z:0x%04x  J:0x%04x\n", dcpu->registers[3],
+						dcpu->registers[4], dcpu->registers[5], dcpu->registers[7]);
+				fprintf(stderr, "PC:0x%04x SP:0x%04x EX:0x%04x IA:0x%04x\n", dcpu->pc, dcpu->sp,
+						dcpu->ex, dcpu->ia);
+				getchar();
+				return NULL;
+			case 0x01:
+				dcpu->ram[--dcpu->sp] = dcpu->pc;
+				dcpu->pc = *pa;
+				dcpu->cycles += 2;
+				return DIRTY(dcpu->sp);
+			case 0x02:
+				/* TRACE */
+				fprintf(stderr, " A:0x%04x  B:0x%04x  C:0x%04x  I:0x%04x\n", dcpu->registers[0],
+						dcpu->registers[1], dcpu->registers[2], dcpu->registers[6]);
+				fprintf(stderr, " X:0x%04x  Y:0x%04x  Z:0x%04x  J:0x%04x\n", dcpu->registers[3],
+						dcpu->registers[4], dcpu->registers[5], dcpu->registers[7]);
+				fprintf(stderr, "PC:0x%04x SP:0x%04x EX:0x%04x IA:0x%04x\n", dcpu->pc, dcpu->sp,
+						dcpu->ex, dcpu->ia);
+				return NULL;
+			case 0x03:
+				/* HALT */
+				fprintf(stderr, " A:0x%04x  B:0x%04x  C:0x%04x  I:0x%04x\n", dcpu->registers[0],
+						dcpu->registers[1], dcpu->registers[2], dcpu->registers[6]);
+				fprintf(stderr, " X:0x%04x  Y:0x%04x  Z:0x%04x  J:0x%04x\n", dcpu->registers[3],
+						dcpu->registers[4], dcpu->registers[5], dcpu->registers[7]);
+				fprintf(stderr, "PC:0x%04x SP:0x%04x EX:0x%04x IA:0x%04x\n", dcpu->pc, dcpu->sp,
+						dcpu->ex, dcpu->ia);
+				fprintf(stderr, "HALT INSTRUCTION CALLED\n");
+				fprintf(stderr, "total cycles=%d\n", dcpu->cycles);
+				for (;;)
+					sleep(10);
+			case 0x08:
+				dcpu->cycles += 3;
+				return DIRTY(interrupt(dcpu, *pa));
+			case 0x09:
+				*pa = dcpu->ia;
+				return dirty;
+			case 0x0a:
+				dcpu->ia = *pa;
+				return NULL;
+			case 0x0b:
+				dcpu->queue_interrupts = false;
+				dcpu->registers[0] = dcpu->ram[dcpu->sp++];
+				dcpu->pc = dcpu->ram[dcpu->sp++];
+				dcpu->cycles += 2;
+				return NULL;
+			case 0x0c:
+				dcpu->queue_interrupts = (*pa != 0);
+				dcpu->cycles++;
+				return NULL;
+			case 0x10: {
+				*pa = dcpu->hw_count;
+				dcpu->cycles++;
+				return dirty;
 			}
-			dcpu->cycles += 3;
-			return NULL;
-		}
-		case 0x12:
-		{
-			struct hardware *hw = nth_hardware(dcpu, *pa);
-			if (hw != NULL && hw->device->interrupt != NULL) {
-				hw->device->interrupt(hw, dcpu);
+			case 0x11: {
+				struct device *device = nth_hardware(dcpu, *pa)->device;
+				if (device != NULL) {
+					dcpu->registers[0] = device->id;
+					dcpu->registers[1] = device->id >> 16;
+					dcpu->registers[2] = device->version;
+					dcpu->registers[3] = device->manufacturer;
+					dcpu->registers[4] = device->manufacturer >> 16;
+					fprintf(stderr, "A:0x%04x B:0x%04x C:0x%04x X:0x%04x Y:0x%04x\n",
+							dcpu->registers[0], dcpu->registers[1], dcpu->registers[2],
+							dcpu->registers[3], dcpu->registers[4]);
+				}
+				dcpu->cycles += 3;
+				return NULL;
 			}
-			dcpu->cycles += 3;
+			case 0x12: {
+				struct hardware *hw = nth_hardware(dcpu, *pa);
+				if (hw != NULL && hw->device->interrupt != NULL) {
+					hw->device->interrupt(hw, dcpu);
+				}
+				dcpu->cycles += 3;
 
-			/* todo: determine how to deal with hardware devices
-			 * modifying DCPU-16 memory
-			 */
-			return NULL;
-		}
-		default: throw("unaryopcode", "out of range");
+				/* todo: determine how to deal with hardware devices
+				 * modifying DCPU-16 memory
+				 */
+				return NULL;
+			}
+			default:
+				throw("unaryopcode", "out of range");
 		}
 	} else {
-		u16  a = decode_a(dcpu, enc_a);
+		u16 a = decode_a(dcpu, enc_a);
 		u16 *b = decode_b(dcpu, enc_b, &dirty);
 #if 0
 		fprintf(stderr, "dirty: %p", dirty);
@@ -296,43 +299,43 @@ static u16 *instr_cycle(struct dcpu *dcpu)
 		if (opcode == 0x01) {
 			*b = a;
 		} else if (opcode == 0x02) {
-			u32 c    = (u32)a + (u32)*b;
+			u32 c = (u32)a + (u32)*b;
 			dcpu->ex = c >> 16;
-			*b       = c;
+			*b = c;
 			dcpu->cycles++;
 		} else if (opcode == 0x03) {
-			u32 c    = (u32)*b - (u32)a;
+			u32 c = (u32)*b - (u32)a;
 			dcpu->ex = c >> 16;
-			*b       = c;
+			*b = c;
 			dcpu->cycles++;
 		} else if (opcode == 0x04) {
-			u32 c    = (u32)*b * (u32)a;
+			u32 c = (u32)*b * (u32)a;
 			dcpu->ex = c >> 16;
-			*b       = c;
+			*b = c;
 			dcpu->cycles++;
 		} else if (opcode == 0x05) {
-			s32 c    = (s32)(s16)*b * (s32)(s16)a;
+			s32 c = (s32)(s16)*b * (s32)(s16)a;
 			dcpu->ex = (u32)c >> 16;
-			*b       = (u32)c;
+			*b = (u32)c;
 			dcpu->cycles++;
 		} else if (opcode == 0x06) {
 			if (a == 0) {
 				dcpu->ex = 0;
-				*b       = 0;
+				*b = 0;
 			} else {
 				u32 c = (u32)*b / (u32)a;
 				dcpu->ex = c >> 16;
-				*b       = c;
+				*b = c;
 			}
 			dcpu->cycles += 2;
 		} else if (opcode == 0x07) {
 			if (a == 0) {
 				dcpu->ex = 0;
-				*b       = 0;
+				*b = 0;
 			} else {
 				s32 c = (s32)(s16)*b / (s32)(s16)a;
 				dcpu->ex = (u32)c >> 16;
-				*b       = (u32)c;
+				*b = (u32)c;
 			}
 			dcpu->cycles += 2;
 		} else if (opcode == 0x08) {
@@ -356,13 +359,13 @@ static u16 *instr_cycle(struct dcpu *dcpu)
 		} else if (opcode == 0x0c) {
 			*b = *b ^ a;
 		} else if (opcode == 0x0d) {
-			u32 c    = *b >> a;
+			u32 c = *b >> a;
 			dcpu->ex = c >> 16;
-			*b       = c;
+			*b = c;
 		} else if (opcode == 0x0e) {
-			s32 c    = (s16)*b >> a;
+			s32 c = (s16)*b >> a;
 			dcpu->ex = (u16)(c >> 16);
-			*b       = (u16)c;
+			*b = (u16)c;
 		} else if (opcode == 0x0f) {
 			*b = *b << a;
 		} else if (opcode == 0x10) {
@@ -412,14 +415,14 @@ static u16 *instr_cycle(struct dcpu *dcpu)
 			fprintf(stderr, "0x%04x: ", opcode);
 			throw("binaryopcode", "out of range");
 		} else if (opcode == 0x1a) {
-			u32 c    = (u32)*b + (u32)a + (u32)dcpu->ex;
+			u32 c = (u32)*b + (u32)a + (u32)dcpu->ex;
 			dcpu->ex = c >> 16;
-			*b       = c;
+			*b = c;
 			dcpu->cycles += 2;
 		} else if (opcode == 0x1b) {
-			u32 c    = (u32)*b - (u32)a + (u32)dcpu->ex;
+			u32 c = (u32)*b - (u32)a + (u32)dcpu->ex;
 			dcpu->ex = c >> 16;
-			*b       = c;
+			*b = c;
 			dcpu->cycles += 2;
 		} else if (opcode == 0x1c) {
 			fprintf(stderr, "0x%04x: ", opcode);
@@ -444,11 +447,10 @@ static u16 *instr_cycle(struct dcpu *dcpu)
 	return dirty;
 }
 
-static void cycle(struct dcpu *dcpu)
-{
+static void cycle(struct dcpu *dcpu) {
 	u16 *dirty;
 	int i;
-	
+
 	dirty = instr_cycle(dcpu);
 
 	for (i = 0; i < dcpu->hw_count; i++)
@@ -462,22 +464,19 @@ u16 programme[] = {
 #define TIMESLICE 0.01
 #define CLOCKRATE 100000
 
-static double diffclock(struct timespec b, struct timespec a)
-{
+static double diffclock(struct timespec b, struct timespec a) {
 	return (b.tv_sec - a.tv_sec) + (b.tv_nsec - a.tv_nsec) / 1000000000.0;
 }
 
-static double inseconds(struct timespec a)
-{
+static double inseconds(struct timespec a) {
 	return a.tv_sec + a.tv_nsec / 1000000000.0;
 }
 
-int main()
-{
+int main() {
 	struct dcpu dcpu = DCPU_INIT;
 	struct timespec last_start, timeslice_start, current;
 	int last_start_cycles, timeslice_start_cycles;
-	
+
 	dcpu.quirks = 0;
 	/* turn me on if the program you are testing requires that the monitor
 	 * is automatically turned on at the beginning of execution and mapped
@@ -538,8 +537,8 @@ label:
 			}
 #endif
 
-			if (dcpu.cycles - timeslice_start_cycles > CLOCKRATE * TIMESLICE
-				&& dcpu.cycles - last_start_cycles > CLOCKRATE * diffclock(current, last_start)) {
+			if (dcpu.cycles - timeslice_start_cycles > CLOCKRATE * TIMESLICE &&
+				dcpu.cycles - last_start_cycles > CLOCKRATE * diffclock(current, last_start)) {
 				double sleeptime = diffclock(timeslice_start, current) + TIMESLICE;
 #if 0
 				fprintf(stderr, "cc=%d, tsc=%d, lsc=%d\n", dcpu.cycles, timeslice_start_cycles, last_start_cycles);
@@ -551,7 +550,7 @@ label:
 					inseconds(timeslice_start) + TIMESLICE,
 					inseconds(timeslice_start) + TIMESLICE - inseconds(current));
 				fprintf(stderr, "ec=%f\n", CLOCKRATE * diffclock(current, last_start));
-				
+
 #endif
 				if (sleeptime > 0) {
 					/* fprintf(stderr, "sleeping for %fms\n", 1000 * sleeptime); */
@@ -589,20 +588,16 @@ label:
 		}
 	} else {
 		fprintf(stderr, "%s: %s\n", except->desc, except->what);
-		fprintf(stderr, " 0x%04x 0x%04x 0x%04x 0x%04x\n",
-			dcpu.ram[110], dcpu.ram[111],
-			dcpu.ram[112], dcpu.ram[113]);
-		fprintf(stderr, " 0x%04x 0x%04x 0x%04x 0x%04x\n",
-			dcpu.ram[512 + 110], dcpu.ram[512 + 111],
-			dcpu.ram[512 + 112], dcpu.ram[512 + 113]);
-		fprintf(stderr, " A:0x%04x  B:0x%04x  C:0x%04x  I:0x%04x\n",
-			dcpu.registers[0], dcpu.registers[1],
-			dcpu.registers[2], dcpu.registers[6]);
-		fprintf(stderr, " X:0x%04x  Y:0x%04x  Z:0x%04x  J:0x%04x\n",
-			dcpu.registers[3], dcpu.registers[4],
-			dcpu.registers[5], dcpu.registers[7]);
-		fprintf(stderr, "PC:0x%04x SP:0x%04x EX:0x%04x IA:0x%04x\n",
-			dcpu.pc, dcpu.sp, dcpu.ex, dcpu.ia);
+		fprintf(stderr, " 0x%04x 0x%04x 0x%04x 0x%04x\n", dcpu.ram[110], dcpu.ram[111],
+				dcpu.ram[112], dcpu.ram[113]);
+		fprintf(stderr, " 0x%04x 0x%04x 0x%04x 0x%04x\n", dcpu.ram[512 + 110], dcpu.ram[512 + 111],
+				dcpu.ram[512 + 112], dcpu.ram[512 + 113]);
+		fprintf(stderr, " A:0x%04x  B:0x%04x  C:0x%04x  I:0x%04x\n", dcpu.registers[0],
+				dcpu.registers[1], dcpu.registers[2], dcpu.registers[6]);
+		fprintf(stderr, " X:0x%04x  Y:0x%04x  Z:0x%04x  J:0x%04x\n", dcpu.registers[3],
+				dcpu.registers[4], dcpu.registers[5], dcpu.registers[7]);
+		fprintf(stderr, "PC:0x%04x SP:0x%04x EX:0x%04x IA:0x%04x\n", dcpu.pc, dcpu.sp, dcpu.ex,
+				dcpu.ia);
 		abort();
 		goto label;
 	}

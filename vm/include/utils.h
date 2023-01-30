@@ -7,4 +7,4 @@ void *emalloc(const char *file, int line, size_t n);
 #pragma GCC poison realloc
 void *erealloc(const char *file, int line, void *p, size_t n);
 #define erealloc(p, n) erealloc(__FILE__, __LINE__, (p), (n))
-#define get_member_of(t1, value, member) (((t1*)((value)->data))->member)
+#define get_member_of(t1, value, member) (((t1 *)((value)->data))->member)

@@ -4,8 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void abort_with_error(const char *fmt, ...)
-{
+void abort_with_error(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);

@@ -7,8 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void evfprintf(FILE *file, const char *fmt, va_list args)
-{
+void evfprintf(FILE *file, const char *fmt, va_list args) {
 	int err;
 	err = vfprintf(file, fmt, args);
 	if (err < 0) {
@@ -19,8 +18,7 @@ void evfprintf(FILE *file, const char *fmt, va_list args)
 	}
 }
 
-void efprintf(FILE *file, const char *fmt, ...)
-{
+void efprintf(FILE *file, const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
@@ -28,8 +26,7 @@ void efprintf(FILE *file, const char *fmt, ...)
 	va_end(args);
 }
 
-void eprintf(const char *fmt, ...)
-{
+void eprintf(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);

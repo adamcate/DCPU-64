@@ -18,10 +18,7 @@ struct device {
 struct hardware {
 	struct device *device;
 };
-enum dcpu_quirks {
-	DCPU_QUIRKS_LEM1802_ALWAYS_ON = 1,
-	DCPU_QUIRKS_LEM1802_USE_16BIT_COLOUR = 2
-};
+enum dcpu_quirks { DCPU_QUIRKS_LEM1802_ALWAYS_ON = 1, DCPU_QUIRKS_LEM1802_USE_16BIT_COLOUR = 2 };
 struct dcpu {
 	u16 registers[8];
 	u16 ram[65536];

@@ -21,26 +21,32 @@
 /**********/
 
 #ifndef NDEBUG
-#define INFO(...) do {                  \
-	if (verbose >= 1) { \
-		errf(__VA_ARGS__);      \
-	}                               \
-} while (0)
+#define INFO(...)                                                                                  \
+	do {                                                                                           \
+		if (verbose >= 1) {                                                                        \
+			errf(__VA_ARGS__);                                                                     \
+		}                                                                                          \
+	} while (0)
 #else
-#define INFO(...) do {} while (0)
+#define INFO(...)                                                                                  \
+	do {                                                                                           \
+	} while (0)
 #endif
 
 #ifndef NDEBUG
-#define TRACE(...) do {                 \
-	if (verbose >= 2) { \
-		errf(__VA_ARGS__);      \
-	}                               \
-} while (0)
+#define TRACE(...)                                                                                 \
+	do {                                                                                           \
+		if (verbose >= 2) {                                                                        \
+			errf(__VA_ARGS__);                                                                     \
+		}                                                                                          \
+	} while (0)
 #else
-#define TRACE(...) do { } while (0)
+#define TRACE(...)                                                                                 \
+	do {                                                                                           \
+	} while (0)
 #endif
 
-#define ARRAY_SIZE(a) ((sizeof (a)) / (sizeof (a[0])))
+#define ARRAY_SIZE(a) ((sizeof(a)) / (sizeof(a[0])))
 
 /*********/
 /* TYPES */
@@ -106,10 +112,10 @@ struct expr {
 	struct expr *left, *right;
 };
 
-typedef struct expr *prefix_fn(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *nexttok);
-typedef struct expr *infix_fn(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *nexttok, struct expr *left);
+typedef struct expr *prefix_fn(size_t line, char *buf, size_t len, size_t *offset,
+							   struct token *nexttok);
+typedef struct expr *infix_fn(size_t line, char *buf, size_t len, size_t *offset,
+							  struct token *nexttok, struct expr *left);
 
 struct pratt_entry {
 	prefix_fn *prefix;
@@ -135,16 +141,12 @@ enum pratt_prec {
 
 static char opers[] = "+-*/%[]()~&|^,:";
 static char kws[][5] = {
-	"a", "b", "c", "x", "y", "z", "i", "j", "sp", "pc", "ex", "ia",
-	"push", "pop", "peek", "pick",
+	"a", "b", "c", "x", "y", "z", "i", "j", "sp", "pc", "ex", "ia", "push", "pop", "peek", "pick",
 };
 static char ops[][5] = {
-	"set", "add", "sub", "mul", "mli", "div", "dvi", "mod", "mdi",
-	"and", "bor", "xor", "shr", "asr", "shl",
-	"ifb", "ifc", "ife", "ifn", "ifg", "ifa", "ifl", "ifu",
-	"adx", "sbx", "sti", "std",
-	"jsr", "int", "iag", "ias", "rfi", "iaq", "hwn", "hwq", "hwi",
-	"dat", "fill",
+	"set", "add", "sub", "mul", "mli", "div", "dvi", "mod", "mdi", "and", "bor", "xor",	 "shr",
+	"asr", "shl", "ifb", "ifc", "ife", "ifn", "ifg", "ifa", "ifl", "ifu", "adx", "sbx",	 "sti",
+	"std", "jsr", "int", "iag", "ias", "rfi", "iaq", "hwn", "hwq", "hwi", "dat", "fill",
 };
 static char eops[][5] = {
 	"mbg", "mbo", "grm", "drm", "srt",
@@ -161,10 +163,7 @@ static int expr_ctr = 0;
 /* UTILITY FUNCTIONS */
 /*********************/
 
-static
-void
-errf(const char *fmt, ...)
-{
+static void errf(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
@@ -172,11 +171,8 @@ errf(const char *fmt, ...)
 	va_end(args);
 }
 
-static
-int
-getlines(FILE *stream, char **out, size_t *len, char *stack, size_t stacksz,
-		char **heap, size_t *heapsz)
-{
+static int getlines(FILE *stream, char **out, size_t *len, char *stack, size_t stacksz, char **heap,
+					size_t *heapsz) {
 	assert(!sgetline(stream, out, len, stack, stacksz, heap, heapsz));
 
 	if (*out == NULL)
@@ -184,24 +180,18 @@ getlines(FILE *stream, char **out, size_t *len, char *stack, size_t stacksz,
 
 	assert(*len >= 1);
 	assert((*out)[*len] == '\0');
-	assert((*out)[*len-1] == '\n');
-	(*out)[*len-1] = '\0';
+	assert((*out)[*len - 1] == '\n');
+	(*out)[*len - 1] = '\0';
 	(*len)--;
 
 	return 0;
 }
 
-static
-bool
-isident(int c)
-{
+static bool isident(int c) {
 	return isalpha(c) || c == '_' || c == '.';
 }
 
-static
-bool
-isidnum(int c)
-{
+static bool isidnum(int c) {
 	return isalnum(c) || c == '_' || c == '.';
 }
 
@@ -209,24 +199,17 @@ isidnum(int c)
 /* EXPRESSIONS */
 /***************/
 
-static
-struct expr *
-expr_new(void)
-{
+static struct expr *expr_new(void) {
 	assert(expr_ctr < ARRAY_SIZE(expr_pool));
 	return expr_pool + expr_ctr++;
 }
 
-static
-struct expr *
-reduce(struct expr *expr)
-{
+static struct expr *reduce(struct expr *expr) {
 	if (expr->left == NULL && expr->right == NULL) {
 		if (expr->value == -1)
 			return expr;
 
 		if (expr->tok.type == TT_IDENT) {
-
 		}
 	}
 
@@ -240,10 +223,7 @@ reduce(struct expr *expr)
 	return expr;
 }
 
-static
-struct expr *
-expr_fromtoken(struct token tok)
-{
+static struct expr *expr_fromtoken(struct token tok) {
 	struct expr *expr = expr_new();
 
 	expr->value = -1;
@@ -253,10 +233,7 @@ expr_fromtoken(struct token tok)
 	return expr;
 }
 
-static
-struct expr *
-expr_fromvalue(uint16_t value)
-{
+static struct expr *expr_fromvalue(uint16_t value) {
 	struct expr *expr = expr_new();
 
 	expr->value = value;
@@ -266,10 +243,7 @@ expr_fromvalue(uint16_t value)
 	return expr;
 }
 
-static
-void
-print_expr(struct expr *expr)
-{
+static void print_expr(struct expr *expr) {
 	if (expr->value == -1) {
 		if (expr->left == NULL) {
 			eprintf("%.*s", expr->tok.len, expr->tok.str);
@@ -286,8 +260,7 @@ print_expr(struct expr *expr)
 				print_expr(expr->left);
 			else
 				eprintf("(nil)");
-			eprintf(" %.*s(%d) ", expr->tok.len, expr->tok.str,
-				expr->tok.type);
+			eprintf(" %.*s(%d) ", expr->tok.len, expr->tok.str, expr->tok.type);
 			if (expr->right)
 				print_expr(expr->right);
 			else
@@ -303,10 +276,7 @@ print_expr(struct expr *expr)
 /* SCANNING + PARSING */
 /**********************/
 
-static
-void
-convertkw(struct token *tok, int toktype, char (*kws)[5], size_t nkws)
-{
+static void convertkw(struct token *tok, int toktype, char (*kws)[5], size_t nkws) {
 	for (size_t i = 0; i < nkws; i++) {
 		if (tok->len != strlen(kws[i]))
 			continue;
@@ -319,10 +289,7 @@ convertkw(struct token *tok, int toktype, char (*kws)[5], size_t nkws)
 	}
 }
 
-static
-void
-consume_ws(const char *buf, size_t len, size_t *offset)
-{
+static void consume_ws(const char *buf, size_t len, size_t *offset) {
 	while (*offset < len) {
 		if (!isspace(buf[*offset]))
 			break;
@@ -330,11 +297,7 @@ consume_ws(const char *buf, size_t len, size_t *offset)
 	}
 }
 
-static
-int
-consume(char *buf, size_t len, size_t *offset,
-		struct token *tok)
-{
+static int consume(char *buf, size_t len, size_t *offset, struct token *tok) {
 	consume_ws(buf, len, offset);
 
 	if (!buf[*offset])
@@ -396,17 +359,14 @@ consume(char *buf, size_t len, size_t *offset,
 			}
 			tok->str = buf + offset_before;
 			tok->len = *offset - offset_before;
-			TRACE("HEXINT%s=%.*s\n",
-				tok->type == TT_HEXINTK ? "k" : "",
-				tok->len, tok->str);
+			TRACE("HEXINT%s=%.*s\n", tok->type == TT_HEXINTK ? "k" : "", tok->len, tok->str);
 			return 0;
 		}
 
 		if (buf[*offset] == 'o')
 			(*offset)++;
 
-		while (isdigit(buf[*offset]) && !(buf[*offset] == '8' ||
-				buf[*offset] == '9'))
+		while (isdigit(buf[*offset]) && !(buf[*offset] == '8' || buf[*offset] == '9'))
 			(*offset)++;
 
 		if (isalnum(buf[*offset]) && !(buf[*offset] == 'k')) {
@@ -422,9 +382,7 @@ consume(char *buf, size_t len, size_t *offset,
 		}
 		tok->str = buf + offset_before;
 		tok->len = *offset - offset_before;
-		TRACE("OCTINT%s=%.*s\n",
-			tok->type == TT_OCTINTK ? "k" : "",
-			tok->len, tok->str);
+		TRACE("OCTINT%s=%.*s\n", tok->type == TT_OCTINTK ? "k" : "", tok->len, tok->str);
 		return 0;
 	}
 
@@ -447,9 +405,7 @@ consume(char *buf, size_t len, size_t *offset,
 		}
 		tok->str = buf + offset_before;
 		tok->len = *offset - offset_before;
-		TRACE("DECINT%s=%.*s\n",
-			tok->type == TT_DECINTK ? "k" : "",
-			tok->len, tok->str);
+		TRACE("DECINT%s=%.*s\n", tok->type == TT_DECINTK ? "k" : "", tok->len, tok->str);
 		return 0;
 	}
 
@@ -463,30 +419,20 @@ error:
 	return 1;
 }
 
-static
-struct token
-get_token(size_t line, char *buf, size_t len,
-		size_t *offset)
-{
-	struct token tok = { .line=line, .col=*offset };
+static struct token get_token(size_t line, char *buf, size_t len, size_t *offset) {
+	struct token tok = {.line = line, .col = *offset};
 
 	while (consume(buf, len, offset, &tok) && *offset < len) {
-		errf("%d:%d: unrecognised token: `%.*s'\n",
-			line, *offset, tok.len, tok.str);
+		errf("%d:%d: unrecognised token: `%.*s'\n", line, *offset, tok.len, tok.str);
 	}
 
-	TRACE("TOKEN=(%d(%d):\"%.*s\":%d:%d:%d)\n",
-		tok.type, tok.subtype,
-		tok.len, tok.str, tok.len,
-		tok.line, tok.col);
+	TRACE("TOKEN=(%d(%d):\"%.*s\":%d:%d:%d)\n", tok.type, tok.subtype, tok.len, tok.str, tok.len,
+		  tok.line, tok.col);
 
 	return tok;
 }
 
-static
-uint16_t
-strtou16(char *str, size_t len, int base)
-{
+static uint16_t strtou16(char *str, size_t len, int base) {
 	char tmp = str[len];
 	str[len] = '\0';
 	errno = 0;
@@ -499,163 +445,108 @@ strtou16(char *str, size_t len, int base)
 		value += UINT16_MAX;
 	goto end;
 invalid:
-	errf("Invalid integer literal `%s': must be in range [%d, %d]\n",
-		str, INT16_MIN, UINT16_MAX);
+	errf("Invalid integer literal `%s': must be in range [%d, %d]\n", str, INT16_MIN, UINT16_MAX);
 	value = 0;
 end:
 	str[len] = tmp;
 	return value;
 }
 
-static
-struct expr *
-parse_prec(size_t line, char *buf, size_t len,
-		size_t *offset, struct token *tok, int prec);
+static struct expr *parse_prec(size_t line, char *buf, size_t len, size_t *offset,
+							   struct token *tok, int prec);
 
-static
-struct expr *
-decint(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *decint(size_t line, char *buf, size_t len, size_t *offset, struct token *tok) {
 	uint16_t value = strtou16(tok->str, tok->len, 10);
 	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value);
 }
 
-static
-struct expr *
-hexint(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *hexint(size_t line, char *buf, size_t len, size_t *offset, struct token *tok) {
 	uint16_t value = strtou16(tok->str, tok->len, 16);
 	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value);
 }
 
-static
-struct expr *
-octint(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *octint(size_t line, char *buf, size_t len, size_t *offset, struct token *tok) {
 	uint16_t value = strtou16(tok->str, tok->len, 8);
 	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value);
 }
 
-static
-struct expr *
-decintk(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *decintk(size_t line, char *buf, size_t len, size_t *offset, struct token *tok) {
 	uint16_t value = strtou16(tok->str, tok->len, 10);
 	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value * 1024);
 }
 
-static
-struct expr *
-hexintk(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *hexintk(size_t line, char *buf, size_t len, size_t *offset, struct token *tok) {
 	uint16_t value = strtou16(tok->str, tok->len, 16);
 	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value * 1024);
 }
 
-static
-struct expr *
-octintk(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *octintk(size_t line, char *buf, size_t len, size_t *offset, struct token *tok) {
 	uint16_t value = strtou16(tok->str, tok->len, 8);
 	*tok = get_token(line, buf, len, offset);
 	return expr_fromvalue(value * 1024);
 }
 
-static
-struct expr *
-keyword(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *keyword(size_t line, char *buf, size_t len, size_t *offset, struct token *tok) {
 	struct expr *expr = expr_fromtoken(*tok);
 	*tok = get_token(line, buf, len, offset);
 	return expr;
 }
 
-static
-struct expr *
-ident(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *ident(size_t line, char *buf, size_t len, size_t *offset, struct token *tok) {
 	struct expr *expr = expr_fromtoken(*tok);
 	*tok = get_token(line, buf, len, offset);
 	return expr;
 }
 
-static
-struct expr *
-square(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *square(size_t line, char *buf, size_t len, size_t *offset, struct token *tok) {
 	struct token brack = *tok;
 	*tok = get_token(line, buf, len, offset);
-	struct expr *inner = parse_prec(line, buf, len, offset, tok,
-		PREC_TERM);
+	struct expr *inner = parse_prec(line, buf, len, offset, tok, PREC_TERM);
 	if (tok->type == TT_RSQ) {
 		*tok = get_token(line, buf, len, offset);
 	} else {
-		errf("%s:%s: unexpected `%.*s', expected `]'\n",
-			line, *offset, tok->len, tok->str);
+		errf("%s:%s: unexpected `%.*s', expected `]'\n", line, *offset, tok->len, tok->str);
 	}
 	struct expr *outer = expr_fromtoken(brack);
 	outer->right = inner;
 	return outer;
 }
 
-static
-struct expr *
-grouping(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *grouping(size_t line, char *buf, size_t len, size_t *offset,
+							 struct token *tok) {
 	*tok = get_token(line, buf, len, offset);
-	struct expr *expr = parse_prec(line, buf, len, offset, tok,
-		PREC_TERM);
+	struct expr *expr = parse_prec(line, buf, len, offset, tok, PREC_TERM);
 	if (tok->type == TT_RBRACK) {
 		*tok = get_token(line, buf, len, offset);
 	} else {
-		errf("%s:%s: unexpected `%.*s', expected `]'\n",
-			line, *offset, tok->len, tok->str);
+		errf("%s:%s: unexpected `%.*s', expected `]'\n", line, *offset, tok->len, tok->str);
 	}
 	return expr;
 }
 
 static struct pratt_entry pratt_table[128];
 
-static
-struct expr *
-unary(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok)
-{
+static struct expr *unary(size_t line, char *buf, size_t len, size_t *offset, struct token *tok) {
 	struct token op = *tok;
-	struct expr *inner = parse_prec(line, buf, len, offset, tok,
-		PREC_UNARY);
+	struct expr *inner = parse_prec(line, buf, len, offset, tok, PREC_UNARY);
 	struct expr *outer = expr_fromtoken(op);
 	outer->right = inner;
 	return outer;
 }
 
-static
-struct expr *
-binary(size_t line, char *buf,
-	size_t len, size_t *offset, struct token *tok, struct expr *left)
-{
+static struct expr *binary(size_t line, char *buf, size_t len, size_t *offset, struct token *tok,
+						   struct expr *left) {
 	struct token op = *tok;
 	*tok = get_token(line, buf, len, offset);
 	int next_prec = pratt_table[op.type].precedence;
 	if (!pratt_table[op.type].right_assoc)
 		next_prec++;
-	struct expr *inner = parse_prec(line, buf, len, offset, tok,
-		next_prec);
+	struct expr *inner = parse_prec(line, buf, len, offset, tok, next_prec);
 	struct expr *outer = expr_fromtoken(op);
 	outer->left = left;
 	outer->right = inner;
@@ -663,45 +554,41 @@ binary(size_t line, char *buf,
 }
 
 static struct pratt_entry pratt_table[] = {
-	[TT_ERROR]   = {NULL,     NULL,    PREC_NONE,    false},
-	[TT_IDENT]   = {ident,    NULL,    PREC_NONE,    false},
-	[TT_DECINT]  = {decint,   NULL,    PREC_NONE,    false},
-	[TT_HEXINT]  = {hexint,   NULL,    PREC_NONE,    false},
-	[TT_OCTINT]  = {octint,   NULL,    PREC_NONE,    false},
-	[TT_DECINTK] = {decintk,  NULL,    PREC_NONE,    false},
-	[TT_HEXINTK] = {hexintk,  NULL,    PREC_NONE,    false},
-	[TT_OCTINTK] = {octintk,  NULL,    PREC_NONE,    false},
-	[TT_OP]      = {NULL,     NULL,    PREC_NONE,    false},
-	[TT_KW]      = {keyword,  NULL,    PREC_NONE,    false},
-	[TT_EOP]     = {NULL,     NULL,    PREC_NONE,    false},
-	[TT_COMMENT] = {NULL,     NULL,    PREC_NONE,    false},
-	[TT_PLUS]    = {NULL,     binary,  PREC_TERM,    false},
-	[TT_MINUS]   = {NULL,     binary,  PREC_TERM,    false},
-	[TT_STAR]    = {NULL,     binary,  PREC_FACTOR,  false},
-	[TT_SLASH]   = {NULL,     binary,  PREC_FACTOR,  false},
-	[TT_PCENT]   = {NULL,     binary,  PREC_FACTOR,  false},
-	[TT_LSQ]     = {square,   NULL,    PREC_NONE,    false},
-	[TT_RSQ]     = {NULL,     NULL,    PREC_NONE,    false},
-	[TT_LBRACK]  = {grouping, NULL,    PREC_NONE,    false},
-	[TT_RBRACK]  = {NULL,     NULL,    PREC_NONE,    false},
-	[TT_TILDE]   = {unary,    NULL,    PREC_NONE,    false},
-	[TT_AMPER]   = {NULL,     binary,  PREC_AND,     false},
-	[TT_PIPE]    = {NULL,     binary,  PREC_BOR,     false},
-	[TT_CARET]   = {NULL,     binary,  PREC_XOR,     false},
-	[TT_COMMA]   = {NULL,     NULL,    PREC_NONE,    false},
-	[TT_COLON]   = {NULL,     NULL,    PREC_NONE,    false},
+	[TT_ERROR] = {NULL, NULL, PREC_NONE, false},
+	[TT_IDENT] = {ident, NULL, PREC_NONE, false},
+	[TT_DECINT] = {decint, NULL, PREC_NONE, false},
+	[TT_HEXINT] = {hexint, NULL, PREC_NONE, false},
+	[TT_OCTINT] = {octint, NULL, PREC_NONE, false},
+	[TT_DECINTK] = {decintk, NULL, PREC_NONE, false},
+	[TT_HEXINTK] = {hexintk, NULL, PREC_NONE, false},
+	[TT_OCTINTK] = {octintk, NULL, PREC_NONE, false},
+	[TT_OP] = {NULL, NULL, PREC_NONE, false},
+	[TT_KW] = {keyword, NULL, PREC_NONE, false},
+	[TT_EOP] = {NULL, NULL, PREC_NONE, false},
+	[TT_COMMENT] = {NULL, NULL, PREC_NONE, false},
+	[TT_PLUS] = {NULL, binary, PREC_TERM, false},
+	[TT_MINUS] = {NULL, binary, PREC_TERM, false},
+	[TT_STAR] = {NULL, binary, PREC_FACTOR, false},
+	[TT_SLASH] = {NULL, binary, PREC_FACTOR, false},
+	[TT_PCENT] = {NULL, binary, PREC_FACTOR, false},
+	[TT_LSQ] = {square, NULL, PREC_NONE, false},
+	[TT_RSQ] = {NULL, NULL, PREC_NONE, false},
+	[TT_LBRACK] = {grouping, NULL, PREC_NONE, false},
+	[TT_RBRACK] = {NULL, NULL, PREC_NONE, false},
+	[TT_TILDE] = {unary, NULL, PREC_NONE, false},
+	[TT_AMPER] = {NULL, binary, PREC_AND, false},
+	[TT_PIPE] = {NULL, binary, PREC_BOR, false},
+	[TT_CARET] = {NULL, binary, PREC_XOR, false},
+	[TT_COMMA] = {NULL, NULL, PREC_NONE, false},
+	[TT_COLON] = {NULL, NULL, PREC_NONE, false},
 };
 
-static
-struct expr *
-parse_prec(size_t line, char *buf, size_t len,
-		size_t *offset, struct token *tok, int prec)
-{
+static struct expr *parse_prec(size_t line, char *buf, size_t len, size_t *offset,
+							   struct token *tok, int prec) {
 	TRACE("parse_prec(prec=%d)\n", prec);
 	prefix_fn *pfn = pratt_table[tok->type].prefix;
 	if (!pfn) {
-		errf("Unexpected `%.*s', expected expression.\n",
-			tok->len, tok->str);
+		errf("Unexpected `%.*s', expected expression.\n", tok->len, tok->str);
 		return NULL;
 	}
 
@@ -720,10 +607,7 @@ parse_prec(size_t line, char *buf, size_t len,
 	return expr;
 }
 
-static
-int
-consume_line(size_t line, char *buf, size_t len)
-{
+static int consume_line(size_t line, char *buf, size_t len) {
 	struct token tok;
 	size_t i = 0;
 
@@ -734,8 +618,7 @@ consume_line(size_t line, char *buf, size_t len)
 
 		tok = get_token(line, buf, len, &i);
 		if (tok.type != TT_COLON) {
-			errf("%d:%d: unexpected `%.*s' (expected `:').\n",
-				line, i, tok.len, tok.str);
+			errf("%d:%d: unexpected `%.*s' (expected `:').\n", line, i, tok.len, tok.str);
 			return 1;
 		}
 
@@ -747,8 +630,7 @@ consume_line(size_t line, char *buf, size_t len)
 		struct token op = tok;
 
 		tok = get_token(line, buf, len, &i);
-		struct expr *left = parse_prec(line, buf, len, &i, &tok,
-				PREC_TERM);
+		struct expr *left = parse_prec(line, buf, len, &i, &tok, PREC_TERM);
 		if (left == NULL)
 			return 1;
 
@@ -760,8 +642,7 @@ consume_line(size_t line, char *buf, size_t len)
 
 		if (tok.type == TT_COMMA) {
 			tok = get_token(line, buf, len, &i);
-			struct expr *right = parse_prec(line, buf, len,
-					&i, &tok, PREC_TERM);
+			struct expr *right = parse_prec(line, buf, len, &i, &tok, PREC_TERM);
 			if (right == NULL)
 				return 1;
 
@@ -779,10 +660,7 @@ consume_line(size_t line, char *buf, size_t len)
 	return 1;
 }
 
-static
-int
-process(FILE *f)
-{
+static int process(FILE *f) {
 	char sbuf[100] = {0};
 	char *buf = NULL, *str;
 	size_t len = 0, size = 0, line = 0;
@@ -799,10 +677,7 @@ process(FILE *f)
 	return 0;
 }
 
-static
-int
-master(char **argv)
-{
+static int master(char **argv) {
 	char *buf;
 	size_t size, len;
 
@@ -810,33 +685,30 @@ master(char **argv)
 		TRACE("INPUT=-\n");
 
 		process(stdin);
-	} else for (; *argv; argv++) {
-		TRACE("INPUT=%s\n", *argv);
+	} else
+		for (; *argv; argv++) {
+			TRACE("INPUT=%s\n", *argv);
 
-		FILE *f = fopen(*argv, "r");
-		if (!f) {
-			perror("fopen");
-			return 1;
-		}
+			FILE *f = fopen(*argv, "r");
+			if (!f) {
+				perror("fopen");
+				return 1;
+			}
 
-		int result = process(f);
-		fclose(f);
-		if (result) {
-			errf("an error occurred in %s\n", *argv);
-			return result;
+			int result = process(f);
+			fclose(f);
+			if (result) {
+				errf("an error occurred in %s\n", *argv);
+				return result;
+			}
 		}
-	}
 
 	TRACE("OUTPUT=%s\n", output ? output : "-");
 
 	return 0;
 }
 
-__attribute__((noreturn))
-static
-void
-usage(const char *progname, const char *errmsg)
-{
+__attribute__((noreturn)) static void usage(const char *progname, const char *errmsg) {
 	errf("usage: %s [-chv] [-o OUTPUT] INPUT...", progname);
 	if (errmsg)
 		errf(": %s", errmsg);
@@ -844,9 +716,7 @@ usage(const char *progname, const char *errmsg)
 	exit(EXIT_FAILURE);
 }
 
-int
-main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 	struct optparse options;
 	int option;
 
@@ -861,13 +731,25 @@ main(int argc, char **argv)
 
 	while ((option = optparse(&options, "hvceo:O:")) != -1) {
 		switch (option) {
-		case 'v': verbose++; break;
-		case 'c': dontlink = true; break;
-		case 'e': extended = true; break;
-		case 'o': output   = options.optarg; break;
-		case 'O': optimise = options.optarg[0]; break;
-		case 'h': usage(argv[0], NULL);
-		case '?': usage(argv[0], options.errmsg);
+			case 'v':
+				verbose++;
+				break;
+			case 'c':
+				dontlink = true;
+				break;
+			case 'e':
+				extended = true;
+				break;
+			case 'o':
+				output = options.optarg;
+				break;
+			case 'O':
+				optimise = options.optarg[0];
+				break;
+			case 'h':
+				usage(argv[0], NULL);
+			case '?':
+				usage(argv[0], options.errmsg);
 		}
 	}
 
